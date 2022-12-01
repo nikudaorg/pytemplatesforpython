@@ -1,7 +1,7 @@
 from abc import abstractclassmethod, abstractmethod, abstractstaticmethod
 from dataclasses import dataclass
 from typing import Iterable, Type
-from pointer_string import PointerString
+from .pointer_string import PointerString
 
 class InnerPrerendererError(Exception):
     def __init__(self):
@@ -103,5 +103,5 @@ class AbstractPrerenderZoneWithSubzones(AbstractPrerenderZone):
                 if not is_zone_absence_entry:
                     result += self._subzone_absence_exit(parameters)
                 result += self._exit(parameters)
-                break
+                break #TODO: move exit condition checking to the start of the while loop to fix the bag of one symbol template
         return result

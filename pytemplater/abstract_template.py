@@ -1,7 +1,7 @@
 from types import CodeType
 from typing import Any, Iterable, Type
-from abstract_prerender_zone import AbstractPrerenderZone, AbstractPrerenderZoneWithSubzones, PrerenderZonesParametersBase
-from pointer_string import PointerString
+from .abstract_prerender_zone import AbstractPrerenderZone, AbstractPrerenderZoneWithSubzones, PrerenderZonesParametersBase
+from .pointer_string import PointerString
 
 TAB = " "
 
@@ -11,7 +11,10 @@ class PrerenderZonesParameters(PrerenderZonesParametersBase):
 
     def __init__(self, string: str, template_name: str):
         self.tabs_number = 0
-        self.pointer_original = PointerString(string)
+        # try:
+        #     self.pointer_original = PointerString(string)
+        # except IndexError:
+        #     raise TemplateSyntaxTemplateIsEmptyError(template_name) TODO: uncomment to fix an empty template bug
         self.template_name = template_name
 
 class InnerTemplaterError(Exception):
@@ -44,6 +47,11 @@ class TemplateSyntaxCompilationError(TemplateSyntaxError):
     def __init__(self, name):
         super().__init__(name)
         self.set_message("compilation error")
+
+# class TemplateSyntaxTemplateIsEmptyError(TemplateSyntaxError):
+#     def __init__(self, name):
+#         super().__init__(name)
+#         self.set_message("emply templates are not allowed") TODO: uncomment to fix an empty template bug
 
 
 class PrerenderRootZone(AbstractPrerenderZoneWithSubzones):

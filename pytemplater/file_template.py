@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Union
-from abstract_template import AbstractTemplate
+from .abstract_template import AbstractTemplate
 
 class FileTemplate(AbstractTemplate):
     def __init__(self, filename: Union[str, Path]):

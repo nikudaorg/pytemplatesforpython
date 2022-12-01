@@ -1,5 +1,5 @@
 from typing import Callable, Optional, Union
-from file_template import FileTemplate
+from .file_template import FileTemplate
 from pathlib import Path
 
 class TemplatesLoader:
