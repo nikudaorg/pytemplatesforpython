@@ -21,38 +21,42 @@ class InnerTemplaterError(Exception):
     def __init__(self):
         super().__init__("inner templater error")
 
-class TemplateSyntaxError(SyntaxError):
+class TemplateError(Exception):
     def __init__(self, name: str):
         self._template_name = name
     
     def set_message(self, message: str):
         super().__init__(f"in the \"{self._template_name}\" template: " + message)
 
-class TemplateSyntaxCurlyBracketsWereNotClosedError(TemplateSyntaxError):
-    def __init__(self, name):
+class TemplateSyntaxCurlyBracketsWereNotClosedError(TemplateError):
+    def __init__(self, name: str):
         super().__init__(name)
         self.set_message(f"curly brackets were not closed")
 
-class TemplateSyntaxTabsError(TemplateSyntaxError):
-    def __init__(self, name):
+class TemplateSyntaxTabsError(TemplateError):
+    def __init__(self, name: str):
         super().__init__(name)
         self.set_message("\"{{-}}\" should be used in pairs with {{+}} above")
 
-class TemplateSyntaxNewLineInCodeBlockError(TemplateSyntaxError):
-    def __init__(self, name):
+class TemplateSyntaxNewLineInCodeBlockError(TemplateError):
+    def __init__(self, name: str):
         super().__init__(name)
         self.set_message("new lines in a code zone are not allowed. Use several code zones instead.")
 
-class TemplateSyntaxCompilationError(TemplateSyntaxError):
-    def __init__(self, name):
+class TemplateSyntaxCompilationError(TemplateError):
+    def __init__(self, name: str, source_code: str):
         super().__init__(name)
-        self.set_message("compilation error")
+        self.set_message(f"compilation error. Here is the source code:\n{source_code}")
 
-class TemplateSyntaxTemplateIsEmptyError(TemplateSyntaxError):
-    def __init__(self, name):
+class TemplateSyntaxTemplateIsEmptyError(TemplateError):
+    def __init__(self, name: str):
         super().__init__(name)
         self.set_message("emply templates are not allowed")
 
+class TemplateRenderError(TemplateError):
+    def __init__(self, name: str, source_code: str):
+        super().__init__(name)
+        self.set_message(f"render error. Here is the source code:\n{source_code}")
 
 class PrerenderRootZone(AbstractPrerenderZoneWithSubzones):
     _possible_subzone_types: list[Type[AbstractPrerenderZone]] = []
@@ -132,6 +136,8 @@ class PrerenderCodeZone(AbstractPrerenderZoneWithSubzones):
     def _entry(self, parameters: PrerenderZonesParameters) -> str:
         try:
             parameters.pointer_original.move(2)
+            while parameters.pointer_original.get_symb(0) == " ":
+                parameters.pointer_original.move(1)
         except IndexError:
             raise TemplateSyntaxCurlyBracketsWereNotClosedError(parameters.template_name)
         return parameters.tabs_number*TAB
@@ -155,7 +161,7 @@ class PrerenderCodeZone(AbstractPrerenderZoneWithSubzones):
     
     def _exit_condition(self, parameters: PrerenderZonesParameters) -> bool:
         try:
-            if parameters.pointer_original.get_symb(0) == parameters.pointer_original.get_symb(1) == "}":
+            if parameters.pointer_original.get_symb(1) == parameters.pointer_original.get_symb(2) == "}":
                 self.exit = True
                 return True
         except IndexError:
@@ -163,7 +169,7 @@ class PrerenderCodeZone(AbstractPrerenderZoneWithSubzones):
         return False
 
     def _exit(self, parameters: PrerenderZonesParameters) -> str:
-        parameters.pointer_original.move(1)
+        parameters.pointer_original.move(2)
         return "\n"
 
     def _subzone_absence_entry(self, parameters: PrerenderZonesParameters) -> str:
@@ -179,6 +185,11 @@ class AbstractTemplate:
     _string: str
     name: str
     _code: CodeType
+    _source_code: str
+    
+    @property
+    def source_code(self) -> str:
+        return self._source_code
 
     def __init__(self):
         self._prerender()
@@ -189,11 +200,11 @@ class AbstractTemplate:
     def _prerender(self) -> None:
         root: PrerenderRootZone = PrerenderRootZone()
         parameters: PrerenderZonesParameters = PrerenderZonesParameters(self._string, self.name)
-        source_code = root.process(parameters)
+        self._source_code = root.process(parameters)
         try:
-            self._code = compile(source_code, self.name, "exec")
+            self._code = compile(self.source_code, self.name, "exec")
         except Exception as e:
-            raise TemplateSyntaxCompilationError(parameters.template_name) from e
+            raise TemplateSyntaxCompilationError(parameters.template_name, self.source_code) from e
 
     def render(self, context: Any) -> str:
         result: str = ""
@@ -201,11 +212,13 @@ class AbstractTemplate:
         def insert(string: Any) -> None:
             nonlocal result
             result += str(string)
-
-        self._exec_code({
-            "context": context, 
-            "__name__": self.name, 
-            "__doc__": None,
-            "insert": insert,
-            })
+        try:
+            self._exec_code({
+                "context": context, 
+                "__name__": self.name, 
+                "__doc__": None,
+                "insert": insert,
+                })
+        except Exception as e:
+            raise TemplateRenderError(self.name, self.source_code) from e
         return result
