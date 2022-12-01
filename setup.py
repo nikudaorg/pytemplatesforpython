@@ -8,7 +8,7 @@ with open("requirements.txt") as f:
 
 setuptools.setup(
 	name="pytemplatesforpython",
-	version="1.1.0",
+	version="1.1.1",
 	author="Alexey-Chebotarev",
 	description="A package for useful python templates.",
 	long_description=long_description,
