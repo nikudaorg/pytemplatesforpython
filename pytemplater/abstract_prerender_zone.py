@@ -93,15 +93,14 @@ class AbstractPrerenderZoneWithSubzones(AbstractPrerenderZone):
                     result += self._subzone_absence_entry(parameters)
                 result += self._process_symbol(parameters)
                 is_zone_absence_entry = False
+            if self._exit_condition(parameters):
+                if not is_zone_absence_entry:
+                    result += self._subzone_absence_exit(parameters)
+                result += self._exit(parameters)
+                break
             try:
                 original.move(1)
             except IndexError as e:
                 self._process_index_error(e, parameters)
                 raise InnerPrerendererError()
-            if self._exit_condition(parameters):
-                result += self._process_symbol(parameters)
-                if not is_zone_absence_entry:
-                    result += self._subzone_absence_exit(parameters)
-                result += self._exit(parameters)
-                break #TODO: move exit condition checking to the start of the while loop to fix the bag of one symbol template
         return result
