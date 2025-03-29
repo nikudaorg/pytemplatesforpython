@@ -1,50 +1,87 @@
-# PyTemplatesForPython Quick Start (beta)
-## Install module
+# PyTemplatesForPython Quick Start (Beta)
+
+## 📦 Installation
+
 ```bash
 pip install pytemplatesforpython
 ```
-## Create simple template
-Write some text:
+
+---
+
+## ✨ Creating a Simple Template
+
+Start with basic text:
+
 ```
 Plain text
 ```
+
 Add a variable:
+
 ```
 Plain text written by {{ insert(name) }}
 ```
-And an object:
+
+Use an object:
+
 ```
 Plain text is written by {{ insert(author.name) }}
-Some imformation about him:
-He`s {{ insert(author.age )}} years old, he lives in {{ insert(author.city) }}
+Some information about him:
+He’s {{ insert(author.age) }} years old, he lives in {{ insert(author.city) }}
 ```
-You ask what else can you do?  
-I answer — all you can in the simple python!
-#### Several nuances:
- - Don`t allow symbols of a new line inside of the double braces ({{}})
- - Do you want to use for, while, if, etc? I am just going to show how to do it, now just remember: {{+}} to increase Tabs number, {{-}} to decrease it.
- - All of the expressions in double braces are connected, you can write {{a = 3}} first, and then {{insert(a)}}
+
+Wondering what else you can do?  
+The answer is: *pretty much anything you can do in plain Python!*
+
+---
+
+### ⚠️ A Few Notes
+
+- Avoid using newline characters inside `{{ ... }}`.
+- Want control structures like `for`, `while`, `if`, etc.?  
+  Use `{{+}}` to increase indentation and `{{-}}` to decrease it.
+- Expressions inside double braces can be sequential:  
+  First `{{ a = 3 }}`, then `{{ insert(a) }}`.
+
+Example:
+
 ```
 Plain text is written by {{ insert(author.name) }}
 Several facts about him:
 {{ for i, fact in enumerate(author.facts): }}{{+}}
-Fact №{insert(i)}: {{ insert(fact) }}
+Fact №{{ insert(i) }}: {{ insert(fact) }}
 {{-}}
 ```
-Can you see it now? Expressions those are between {{+}} and {{-}} will have a tab before them, just like:
+
+Which will be rendered with indentation similar to:
+
 ```python
-for fact in author.facts:
+for i, fact in enumerate(author.facts):
   insert(i)
   insert(fact)
 ```
-But this still won't work: all templates basically have just one parameter they can use in expressions - "context". Let's divide it into several parameters:
+
+---
+
+## 📌 Working with Context
+
+By default, all expressions reference a single `context` parameter.  
+To improve clarity, you can unpack it:
+
 ```
 {{ man: Creature = context["man"] }}
 {{ monkey: Creature = context["monkey"] }}
+
 Man loves {{ insert(man.loves) }} and monkey loves {{ insert(monkey.loves) }}.
-Man lives in {{ insert(man.lives_in) }}, monkey lives {{ insert(monkey.lives_in) }}.
+Man lives in {{ insert(man.lives_in) }}, monkey lives in {{ insert(monkey.lives_in) }}.
 ```
-For now we used templates only for the plain text but the most common usage is for HTML code:
+
+---
+
+## 🌐 HTML Templates Example
+
+Most common use case is rendering HTML:
+
 ```html
 <!DOCTYPE html>
 {{ author = context["author"] }}
@@ -62,64 +99,103 @@ For now we used templates only for the plain text but the most common usage is f
 </body>
 </html>
 ```
-## Work with templates
-### Okay, we've created some templates, let's work with them in Python.
-Save one template into template.html and import FileTemplate from the module:
+
+---
+
+## 🛠 Working with Templates in Python
+
+### Step 1: Import `FileTemplate`
+
 ```python
 from pytemplatesforpython import FileTemplate
 ```
-Create a FileTemplate object:
+
+### Step 2: Create a `FileTemplate` instance
+
 ```python
-template: FileTemplate = FileTemplate("template.html")
+template = FileTemplate("template.html")
 ```
-Create an Author class that we used in the template:
+
+### Step 3: Define your data
+
 ```python
 class Author:
-  def __init__(self, name, facts):
-    self.name = name
-    self.facts = facts
+    def __init__(self, name, facts):
+        self.name = name
+        self.facts = facts
 
-author = Author("Alexey", ["lives in Israel", "knows Python, Java and JavaScript", "can`t think of more facts"])
+author = Author(
+    "Alexey",
+    ["lives in Israel", "knows Python, Java, and JavaScript", "can’t think of more facts"]
+)
 ```
-Render the template:
+
+### Step 4: Render the template
+
 ```python
-result: str = template.render({"author":author})
+result = template.render({"author": author})
 ```
-Congrutilations! Now you can check what did we get,
+
+### Step 5: Display or save the result
+
 ```python
 print(result)
 ```
-write the result to the some another file,
+
 ```python
 with open("result.html", "w+") as file:
-  file.write(result)
+    file.write(result)
 ```
-or, if you use django, you can make an HttpResponce that every view has to return:
+
+### Step 6: Django integration
+
 ```python
 from django.http import HttpResponse
+
 def view(req):
-  return HttpResponce(template.render({"author":author}))
+    return HttpResponse(template.render({"author": author}))
 ```
-## TemplatesLoader
-In real project you usually need to use many templates, as example for different website pages. For that you can use TemplatesLoader. Import it:
+
+---
+
+## 📁 Managing Multiple Templates
+
+In a real project, you'll likely need multiple templates. Use `TemplatesLoader` for that.
+
+### Step 1: Import
+
 ```python
 from pytemplatesforpython import TemplatesLoader
 ```
-Create a TemplatesLoader object. You can specify a directory, where are all your templates stored or it will be current working directory:
+
+### Step 2: Initialize
+
 ```python
-loader: TemplatesLoader = TemplatesLoader("templates/")
+loader = TemplatesLoader("templates/")
 ```
-When you create a template, it compiles, in that step some syntax errors can be found. You can compile all your templates at start or compile ones that are being needed. To compile some of templates at start use:
+
+### Step 3: Load templates
+
+Load one manually:
+
 ```python
-loader.load_template(filename)
+loader.load_template("example.html")
 ```
-Or you can load all the templates from the folder and its subfolders:
+
+Or load all templates recursively:
+
 ```python
-loader.recursively_load_folder(filename)
+loader.recursively_load_folder()
 ```
-To get one of the templates, never mind, if it was loaded or no use:
+
+### Step 4: Retrieve a template
+
 ```python
-loader.get_template(filename)
+template = loader.get_template("example.html")
 ```
-Please note that all of paths should be satisfied as relative to the path, that has been satisfied when the loader was created.
-## Good Luck!
+
+> 🔹 All paths are relative to the directory you passed to `TemplatesLoader`.
+
+---
+
+## 🎉 Good Luck!
